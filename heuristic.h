@@ -30,7 +30,9 @@ public:
 	int  Good_Indices(vector<int> degA, vector<int> degB);
 	void Greedy_Algorithm();
 	
+	void PreProcessing();
 	void Construction_Algorithm();
+	void Second_Algorithm();
 	
 	int objective_function(Matrix* m);
 

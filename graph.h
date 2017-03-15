@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <math.h> 
 
 using namespace std;
 
@@ -30,10 +31,12 @@ public:
 	int getNbNode(){return NbNodes; };
 	int getNbEdges(){return NbEdges; };
 	int getMaxDegree(){return MaxDegree; };
+	int getAdjMatrixElement(int row, int col){return AdjMatrix[row][col]; };
 	vector<vector<int> > getAdjMatrix(){ return AdjMatrix; };
 
 	//Set functions 
 	void setNbNode(int nb){ NbNodes = nb; };
+	void setNbEdges(int nb){ NbEdges = nb; };
 	void setAdjMatrixElement(int position_i, int position_j, int value){ AdjMatrix[position_i][position_j] = value;};
 	void setAdjMatrix(vector<vector<int> > const matrix){ AdjMatrix = matrix; };
 

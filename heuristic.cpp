@@ -183,29 +183,46 @@ int Heuristic::Good_Indices(vector<int> degA, vector<int> degB)
 
 void Heuristic::Construction_Algorithm()
 {
+
 	bool isomorphism = false;
 
-	//We add
-	int random_index = 0;
+	//Store all degrees of A and Abar
+	vector<int> degA = Compute_Degrees(A);
+	vector<int> degAbar = Compute_Degrees(Abar);
+
+	//We add initial node
+	int initial_node = 0;
+
+	vector<int> CandidatesForZero;
+	for(int i =initial_node; i< A->get_size(); i++)
+	{
+		CandidatesForZero.push_back(i);
+	}
 
 	//This vector contains all node which are not initially in the subgraph
 	vector<int> Not_In_The_Graph;
 	
 	//Here we fill the vector of indices (of the target) of the missing node
-	for(int i=random_index+1; i < A->get_size() ; i++)
+	for(int i=0; i < A->get_size() ; i++)
 	{
-		Not_In_The_Graph.push_back(i);
+		if(i != CandidatesForZero[initial_node])
+		{
+			Not_In_The_Graph.push_back(i);
+		}
 	}
+
+	cout << "Number of candidates for the root node : " << CandidatesForZero.size() << endl;
 	int nb_missing_node = (int)Not_In_The_Graph.size();
 
 	//parent_vector contains the parent node at each node intersection
 	vector<int> parent_vector;
-	parent_vector.push_back(random_index);
+	parent_vector.push_back(CandidatesForZero[initial_node]);
 
 
 	//current_vector is the queue containing all node at specific step
 	vector<int> current_vector = parent_vector;
 	
+
 	//Last_fifo 
 	int last_fifo = -1;
 
@@ -217,13 +234,13 @@ void Heuristic::Construction_Algorithm()
 	//while we don't find an isomorphism
 	while(isomorphism == false)
 	{
-		//cout << "Iteration : " << step << endl;
+		//cout << "Root node : " << CandidatesForZero[initial_node] << endl;
 		//cout << "Size of parent vector : " << parent_vector.size() << endl;
 
 		//InDepth indicates number of rejected node as candidate for the next value of phi
 		//If we accept a node Indepth = 0
 		int InDepth =0;
-
+		
 		//we iterate over the missing-node
 		for(int idx = last_fifo+1; idx < nb_missing_node-InDepth; idx++)
 		{
@@ -232,25 +249,10 @@ void Heuristic::Construction_Algorithm()
 			current_vector.push_back(Not_In_The_Graph[idx]);
 
 
-			//*********************This block is to test if the new queue is an isomorphism*************
-			bool test = true;
-
-
-			int last_index = (int)current_vector.size()-1;
-			for(int i = 0; i < (int)current_vector.size(); i++)
-			{
-				if(Abar->get(i,last_index) > A->get(current_vector[i], current_vector[last_index]))
-				{
-					test = false;
-				}
-			}
-			//*******************************************************************************************
-
-			//If the function phi violates a constraint, we reject the node and push it at the back of Not_In_The_Graph
-			if(test == false)
+			if(degAbar[current_vector.size()-1] > degA[Not_In_The_Graph[idx]])
 			{
 				current_vector = parent_vector;
-				if((int)parent_vector.size() < (int)Abar->get_size() -1)
+				if((int)parent_vector.size() < (int)Abar->get_size()-1)
 				{
 					int record_node = Not_In_The_Graph[idx];
 					Not_In_The_Graph.erase(Not_In_The_Graph.begin()+idx);
@@ -258,21 +260,52 @@ void Heuristic::Construction_Algorithm()
 					idx = idx -1;
 					InDepth +=1;
 				}
-			}
 
-			//If the function phi still satisfies the constraints we add it to parent_vector and keep going on this branch
-			if(test == true)
-			{
-				parent_vector.push_back(Not_In_The_Graph[idx]);
-				last_fifo = idx;
-				InDepth =0;
 			}
-			if(parent_vector.size() == Abar->get_size())
+			else
 			{
-				isomorphism = true;
-				break;
-			}
+				//*********************This block is to test if the new queue is an isomorphism*************
+				bool test = true;
 
+
+				int last_index = (int)current_vector.size()-1;
+				for(int i = 0; i < (int)current_vector.size(); i++)
+				{
+					if(Abar->get(i,last_index) > A->get(current_vector[i], current_vector[last_index]))
+					{
+						test = false;
+					}
+				}
+				//*******************************************************************************************
+
+				//If the function phi violates a constraint, we reject the node and push it at the back of Not_In_The_Graph
+				if(test == false)
+				{
+					current_vector = parent_vector;
+					if((int)parent_vector.size() < (int)Abar->get_size()-1)
+					{
+						int record_node = Not_In_The_Graph[idx];
+						Not_In_The_Graph.erase(Not_In_The_Graph.begin()+idx);
+						Not_In_The_Graph.push_back(record_node);
+						idx = idx -1;
+						InDepth +=1;
+					}
+				}
+
+				//If the function phi still satisfies the constraints we add it to parent_vector and keep going on this branch
+				if(test == true)
+				{
+					parent_vector.push_back(Not_In_The_Graph[idx]);
+					last_fifo = idx;
+					//last_fifo = 1;
+					InDepth =0;
+				}
+				if(parent_vector.size() == Abar->get_size())
+				{
+					isomorphism = true;
+					break;
+				}
+			}
 		}
 		step ++;
 		//Check if the size 
@@ -286,21 +319,23 @@ void Heuristic::Construction_Algorithm()
 		if(parent_vector.size() == 0)
 		{
 			//int initial_index = rand()%(A->get_size());
-			random_index += 1;
-			if(random_index >= A->get_size())
+			initial_node += 1;
+			if(initial_node >= (int)CandidatesForZero.size())
 			{
 				break;
 			}
 			vector<int> New;
 			for(int i = 0; i < A->get_size(); i++)
 			{
-				if(i != random_index)
+				if(i != CandidatesForZero[initial_node])
 				{
 					New.push_back(i);
 				}
 			}
 			Not_In_The_Graph = New;
-			parent_vector.push_back(random_index);
+
+			//random_shuffle(Not_In_The_Graph.begin(), Not_In_The_Graph.end());
+			parent_vector.push_back(CandidatesForZero[initial_node]);
 			current_vector = parent_vector;
 			nb_missing_node = (int)Not_In_The_Graph.size();
 			last_fifo = -1;
@@ -338,4 +373,222 @@ int Heuristic::objective_function(Matrix* m)
 }
 
 
+void Heuristic::PreProcessing()
+{
+	vector<int> degA = Compute_Degrees(A);
+	vector<int> degAbar = Compute_Degrees(Abar);
+
+	vector<size_t> indicesAbar = sort_indexes(degAbar);
+	vector<size_t> indicesA = sort_indexes(degA);
+
+	for(int i =0; i < degAbar.size(); i++)
+	{
+		Abar->Switch_Node(indicesAbar[i], degAbar.size()-1 -i);
+	}
+	for(int i =0; i < degA.size(); i++)
+	{
+		A->Switch_Node(indicesA[i], degA.size()-1 -i);
+	}
+
+}
+
+void Heuristic::Second_Algorithm()
+{
+	srand(time(NULL));
+
+	bool isomorphism = false;
+
+	//Store all degrees of A and Abar
+	vector<int> degA = Compute_Degrees(A);
+	vector<int> degAbar = Compute_Degrees(Abar);
+
+	//We add initial node
+	int initial_node = 0;
+
+	vector<int> CandidatesForZero;
+
+
+	for(int i =initial_node; i< A->get_size(); i++)
+	{
+		if(degAbar[0] <= degA[i])
+		{
+			CandidatesForZero.push_back(i);
+		}
+	}
+
+	//This vector contains all node which are not initially in the subgraph
+	vector<int> Not_In_The_Graph;
+	
+	//Here we fill the vector of indices (of the target) of the missing node
+	for(int i=0; i < A->get_size() ; i++)
+	{
+		if(i != CandidatesForZero[initial_node])
+		{
+			Not_In_The_Graph.push_back(i);
+		}
+	}
+	//random_shuffle(Not_In_The_Graph.begin(), Not_In_The_Graph.end());
+	
+	cout << "Number of candidates for the root node : " << CandidatesForZero.size() << endl;
+	cout << "Last candidate for the root node : " << CandidatesForZero[CandidatesForZero.size()-1] << endl;
+
+	int nb_missing_node = (int)Not_In_The_Graph.size();
+
+	//parent_vector contains the parent node at each node intersection
+	vector<int> parent_vector;
+	parent_vector.push_back(CandidatesForZero[initial_node]);
+
+
+	//current_vector is the queue containing all node at specific step
+	vector<int> current_vector = parent_vector;
+
+	//Count the number of iteration
+	int step =0;
+
+	bool test = true;
+
+	bool final_test = true;
+
+	vector<int> last_guy;
+	last_guy.push_back(-1);
+
+	//***************************Start the loop**********************************
+
+	//while we don't find an isomorphism
+	while(isomorphism == false && final_test == true)
+	{
+		//cout << "Root node : " << CandidatesForZero[initial_node] << endl;
+		//cout << "Root node : " << initial_node << endl;
+		//cout << "Size of parent vector : " << parent_vector.size() << endl;
+		//cout << "Last parent : " << parent_vector[parent_vector.size()-1] << endl;
+		//cout << "Last guy : " << last_guy[last_guy.size()-1]<< endl;
+		//cout << "test: " <<test<< endl;
+
+
+		//start specifies if we go down in the tree (=-1) or if we go up 
+		int start =-1;
+
+
+		if(test == false)
+		{			
+			start = last_guy[last_guy.size()-1];
+			last_guy.pop_back();
+		}
+
+		bool exit_loop = false;
+		int Last_missing_node = 0;
+
+		//we iterate over the missing-node
+		for(int idx = start+1 ; idx < nb_missing_node-Last_missing_node ; idx++)
+		{
+			if(find(parent_vector.begin(), parent_vector.end(),Not_In_The_Graph[idx]) == parent_vector.end())
+			{
+				test = true;
+				//We add the next candidate
+				current_vector.push_back(Not_In_The_Graph[idx]);
+				
+				if(degAbar[current_vector.size()-1] > degA[Not_In_The_Graph[idx]])
+				{
+					current_vector = parent_vector;
+					test = false;
+				}
+				else
+				{
+					//*********************This block is to test if the new queue is an isomorphism*************
+					int last_index = (int)current_vector.size()-1;
+					for(int i = 0; i < (int)current_vector.size(); i++)
+					{
+						if(Abar->get(i,last_index) > A->get(current_vector[i], current_vector[last_index]))
+						{
+							test = false;
+						}
+					}
+					//*******************************************************************************************
+
+					//If the function phi violates a constraint, we reject the node and push it at the back of Not_In_The_Graph
+					if(test == false)
+					{
+						current_vector = parent_vector;
+					}
+					//If the function phi still satisfies the constraints we add it to parent_vector and keep going on this branch
+					if(test == true)
+					{
+						last_guy.push_back(idx);
+						parent_vector.push_back(Not_In_The_Graph[idx]);
+						exit_loop = true;
+						if(parent_vector.size() == Abar->get_size())
+						{
+							isomorphism = true;
+						}
+						
+					}
+				}
+			}
+
+			if(exit_loop == true)
+			{
+				break;
+			}
+		}
+		
+		
+
+		//Check if the size 
+		if(parent_vector.size() != Abar->get_size() && parent_vector.size() > 0 && test == false)
+		{
+			parent_vector.pop_back();
+			current_vector = parent_vector;
+		}
+
+		//We add this loop to run again the algorithm
+		if(parent_vector.size() == 0)
+		{
+			
+			initial_node += 1;
+			if(initial_node >= (int)CandidatesForZero.size())
+			{
+				final_test = false;
+				break;
+			}
+			cout << "New Tree with root node : " << CandidatesForZero[initial_node] << endl;
+			vector<int> New;
+			for(int i = 0; i < A->get_size(); i++)
+			{
+				if(i != CandidatesForZero[initial_node])
+				{
+					New.push_back(i);
+				}
+			}
+			Not_In_The_Graph = New;
+
+			
+			parent_vector.push_back(CandidatesForZero[initial_node]);
+			current_vector = parent_vector;
+			nb_missing_node = (int)Not_In_The_Graph.size();
+
+			vector<int> new_last_guy;
+			new_last_guy.push_back(-1);
+			last_guy = new_last_guy;
+
+			test = true;
+		}
+	}
+
+	//In this part we juste check if effectively the graph obtained are under isomorph
+	if(isomorphism == true)
+	{
+		
+		cout << "The graphs are under isomorph !" << endl;
+		for(int i =0; i < Abar->get_size() ; i++)
+		{
+			cout << "Phi(" << i << ") = " << parent_vector[i] << endl;
+		}
+		
+	}
+	else
+	{
+		cout << "Can't find an isomorphism between subgraphs !" << endl;
+	}
+	
+}
 

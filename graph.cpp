@@ -71,14 +71,13 @@ void Graph::StoreAdjMatrix(vector<vector<int> > adjMatrix){
 //Function to read files and store it as graphs
 void Graph::readfile(string graphName){
 
-	string instance = "benchmarks/LV";
 	vector<vector<int>> adjGbar;
 	int ntarget;
 	int tmp;
 	int deg;
 
 	//Lecture du fichier target
-	ifstream target(instance + graphName);
+	ifstream target(graphName);
 	int sum = 0;
 	if (target){
 		target >> ntarget;
